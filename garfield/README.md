@@ -70,7 +70,6 @@ Elimizdeki j.arbuckle kimlik bilgisiyle SMB paylaşımlarını tarıyoruz hangi 
 
 bloodyAD --host DC01.garfield.htb -u 'j.arbuckle' -p 'Th1sD4mnC4t!@1978' get writable --detail
 j.arbuckle hesabının domain genelinde hangi AD nesnelerinde yazma hakkı olduğunu kontrol ediyoruz.
-Jon Arbuckle üzerinde yazma hakkı olduğunu görüyoruz.
 
 
 
