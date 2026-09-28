@@ -31,7 +31,7 @@ ping komutu ile hedefin ayakta olup olmadığını doğruluyoruz
 
 
 2- Nmap Port/Service/Os/Script taraması
-
+![nmap taraması](images/02-nmap.png)
 nmap -A -Pn 10.129.244.207
 
 sonuçlar klasik bir Active Directory profilini gösteriyor:
