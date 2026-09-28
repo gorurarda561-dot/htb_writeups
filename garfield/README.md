@@ -252,7 +252,7 @@ Tarama sonucunda `192.168.100.1`'in DC01, `192.168.100.2`'nin ise RODC01 olduğu
 ### 16 — İç Ağ /etc/hosts Kaydı
 
 ```bash
-echo "192.168.100.2 RODC.garfield.htb" | sudo tee -a /etc/hosts
+echo "192.168.100.2 RODC01.garfield.htb" | sudo tee -a /etc/hosts
 ```
 
 ![echo](images/21-echo.png)
