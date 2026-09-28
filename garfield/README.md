@@ -24,15 +24,18 @@ SALDIRI YOLU;
 
 Recon (keşif)
 1- Host ayakta mı ? 
-
+![ping](images/01-ping.png)
 ping -c 4 10.129.244.207
+
 ping komutu ile hedefin ayakta olup olmadığını doğruluyoruz
 
 
 
 2- Nmap Port/Service/Os/Script taraması
-![nmap taraması](images/02-nmap.png)
+
 nmap -A -Pn 10.129.244.207
+![nmap taraması](images/02-nmap.png)
+![nmap taraması](images/03-nmap2.png)
 
 sonuçlar klasik bir Active Directory profilini gösteriyor:
 53 -> DNS 
@@ -47,7 +50,7 @@ sonuçlar klasik bir Active Directory profilini gösteriyor:
 
 
 3- /etc/hosts kaydı
-
+![echo](images/04-echo.png}
 echo "10.129.244.207 garfield.htb DC01.garfield.htb" | sudo tee -a /etc/hosts
 
 
