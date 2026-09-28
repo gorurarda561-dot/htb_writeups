@@ -479,3 +479,75 @@ type C:\Users\Administrator\Desktop\root.txt
 ![root.txt](images/39-root.txt.png)
 
 Makineyi düşürüyoruz!
+
+
+
+## ---  ÖZET  ---
+
+Bu saldırı zincirinde, önce j.arbuckle'ın SMB/LDAP üzerinden scriptPath yazma iznini kötüye kullanarak Logon Script Hijack ile l.wilson kullanıcısına dönüştük. l.wilson'ın l.wilson_adm üzerindeki parola sıfırlama hakkını kullanıp bir üst kullanıcıya geçtik ve l.wilson_adm'ın RODC Administrators grubuna kendini ekleyebildiğini keşfettik.
+
+Bu grup üyeliği bize RODC01 bilgisayar nesnesi üzerinde sınırlı bir yazma hakkı verdi. Bunu doğrudan kullanmak yerine Machine Account Quota istismarıyla sahte bir bilgisayar hesabı (DC02$) oluşturup, ona RBCD yetkisi tanıyarak S4U2Proxy ile Administrator'ı impersonate eden bir bilet elde ettik.
+
+Ligolo-ng ile izole 192.168.100.0/24 ağına pivot yapıp, bu Kerberos bileti sayesinde RODC01'e Administrator olarak bağlandık ve SYSTEM yetkisi kazandık. Buradan mimikatz ile RODC'ye özel krbtgt_8245 hash'ini dump edip, Rubeus ile bir RODC Golden Ticket ürettik.
+
+Bu bileti, gerçek DC01'e KeyList Attack (asktgs /keyList) ile sunarak, RODC'nin normalde erişemeyeceği Administrator'ın gerçek NTLM hash'ini DC'den sızdırmayı başardık. Son olarak bu hash ile Pass-the-Hash yaparak Domain Admin yetkisi kazandık ve root flag'ini elde ettik.
+
+
+## ---  TERİMLER SÖZLÜĞÜ  ---
+
+**DC (Domain Controller):** Active Directory domain'ini yöneten, kullanıcı/bilgisayar hesaplarını ve kimlik doğrulamayı (Kerberos, LDAP) barındıran sunucu.
+
+
+**RODC (Read-Only Domain Controller):** DC'nin salt-okunur bir kopyası. Normal DC'nin aksine AD veritabanına yazamaz, sadece izin verilen hesapların parolalarını depolayabilir.
+
+
+**LDAP (Lightweight Directory Access Protocol):** Active Directory'deki kullanıcı, grup, bilgisayar gibi nesneleri sorgulamak/değiştirmek için kullanılan protokol.
+
+
+**SMB (Server Message Block):** Windows'ta dosya/yazıcı paylaşımı için kullanılan protokol.
+
+
+**Kerberos:** Windows domain'lerinin varsayılan kimlik doğrulama protokolü. Şifre yerine "bilet" tabanlı çalışır.
+
+
+**krbtgt:** Kerberos biletlerini imzalamak için kullanılan özel bir hesap.
+
+
+**scriptPath:** Bir kullanıcının Active Directory'deki özelliği — login olduğunda otomatik çalıştırılacak logon script'in dosya yolunu belirtir.
+
+
+**ACL (Access Control List) / ACE (Access Control Entry):** Bir AD nesnesi (kullanıcı, grup, bilgisayar) üzerinde kimin hangi işlemi (okuma, yazma, silme) yapabileceğini tanımlayan izin listesi.
+
+
+**RBCD (Resource-Based Constrained Delegation):** Bir bilgisayar/servis hesabının, başka bir hesap adına (o hesapmış gibi davranması) kaynaklara erişebilmesini sağlayan Kerberos delegasyon mekanizması.
+
+
+**Machine Account Quota (ms-DS-MachineAccountQuota):** Domain'in varsayılan bir ayarı her authenticated user'ın domain'e belirli sayıda yeni bilgisayar hesabı ekleyebilmesine izin verir.
+
+
+**S4U2Self / S4U2Proxy (Service for User to Self/Proxy):** bileti kullanarak gerçek hedef servise o kullanıcı adına erişim bileti almasını sağlar.
+
+
+**KeyList Attack:** RODC imzalı bir Golden Ticket'ı kullanarak, gerçek (yazılabilir) DC'ye /keyList parametresiyle TGS talebi göndermek.
+
+
+**Pass-the-Hash:** Bir kullanıcının açık parolasını bilmeden, sadece NTLM hash'ini kullanarak o kullanıcı gibi kimlik doğrulaması yapabilme tekniğidir.
+
+
+**Pivoting:** Ele geçirilen bir makineyi "atlama taşı" olarak kullanıp, normalde doğrudan erişilemeyen (izole) bir ağa ulaşma tekniğidir.
+
+
+**Neden C:\Temp'e Kuruyor/Çalıştırıyoruz?**
+1-Genelde tüm kullanıcılar tarafından yazılabilir/çalıştırılabilir izinlere sahiptir.
+2-sistemin geçici dosya alanı olduğu için burada bulunan dosyalar dikkat çekmez diğer dizinlere göre daha normal karşılanır.
+
+
+
+
+
+
+
+
+
+
+
