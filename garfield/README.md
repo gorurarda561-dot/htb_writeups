@@ -79,7 +79,7 @@ Elimizde zaten geçerli bir kimlik bilgisi var: `j.arbuckle:Th1sD4mnC4t!@1978`. 
 nxc smb garfield.htb -u 'j.arbuckle' -p 'Th1sD4mnC4t!@1978' -M spider_plus
 ```
 
-![smb](images/06smb-spider-plus.png)
+![smb](images/06-smb-spider-plus.png)
 
 j.arbuckle kimlik bilgisiyle SMB paylaşımlarını tarıyoruz. 5 share tespit edildi, 3'ü okunabilir (IPC$, NETLOGON, SYSVOL). SYSVOL ve NETLOGON dikkat çekici çünkü bunlar logon script'lerin ve GPO dosyalarının tutulduğu paylaşımlar.
 
