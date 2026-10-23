@@ -27,9 +27,9 @@ ML checkpoint yükleme akışında güvensiz pickle/torch deserialization → Ro
 
 ### 1 — Host ayakta mı?
 
-\`\`\`bash
+```bash
 ping -c 4 10.129.177.38
-\`\`\`
+```
 
 ![ping](images/01.png)
 
@@ -39,9 +39,9 @@ Ping komutu ile hedefin ağ üzerinden erişilebilir durumda olup olmadığına 
 
 ### 2 — Nmap Port/Service/OS Taraması
 
-\`\`\`bash
+```bash
 nmap -A -Pn 10.129.177.38
-\`\`\`
+```
 
 ![nmap taraması](images/02.png)
 
@@ -51,9 +51,9 @@ nmap -A -Pn 10.129.177.38
 
 ### 3 — /etc/hosts Kaydı
 
-\`\`\`bash
+```bash
 echo "10.129.177.38 bedside.htb" | sudo tee -a /etc/hosts
-\`\`\`
+```
 
 ![etc hosts](images/03.png)
 
