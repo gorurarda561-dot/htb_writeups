@@ -116,11 +116,41 @@ Kabul ettiği formatlar: `jpeg, jpg, png, bmp, tiff, dcm, pdf`.
 
 ## Foothold — Dosya Yükleme ve Reverse Shell
 
-### 9 — Dosya Yükleme ve Reverse Shell Alma
+### 9 — Payload Hazırlama ve Yükleme
 
-![reverse shell](images/09.png)
+![payload hazırlama](images/09.png)
 
-Research portalındaki dosya yükleme fonksiyonunu kullanarak bir reverse shell payload'ı yüklüyoruz (arka planda çalışan PDF/görüntü işleme pipeline'ını tetikleyerek). Bağlantı geldiğinde `nc -lvnp 9000` ile shell'i yakalıyoruz.
+`bedsidee.py` scriptiyle bir reverse shell komutu barındıran kötücül bir pickle payload'ı oluşturuyoruz (`shell.pickle.gz`). Ardından `trigger.py` scriptiyle bu payload'ı araştırma portalına yüklüyoruz — `sh.pickle.gz` ve `trigger.pdf` olarak yükleniyor ve arka planda çalışan **cron/watcher** sürecinin bunu işlemesini (`~30s` içinde) bekliyoruz.
+
+
+### 10 — Reverse Shell 
+
+```bash
+nc -lvnp 9000
+```
+
+![reverse shell](images/10.png)
+
+Watcher süreci payload'ı işlediğinde bağlantı geliyor.
+
+```bash
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+```
+
+ardından `Ctrl+Z` ile arka plana alıp `stty raw -echo; fg` ile terminali tam etkileşimli hale getiriyoruz.
+
+
+### 11 — Dosya Sistemi Keşfi
+
+![requirements ve ls](images/11.png)
+
+```bash
+cat requirements.txt
+```
+
+`pdfminer.six==20250506` paketi görülüyor — watcher, PDF dosyalarını `pdfminer` ile parse ediyor. Kök dizine çıkıp (`cd ..`, `ls -la`) genel yapıyı inceliyoruz.
+
+
 
 
 
