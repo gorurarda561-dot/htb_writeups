@@ -45,9 +45,9 @@ nmap -A -Pn 10.129.177.38
 
 ![nmap taraması](images/02.png)
 
-- **22/tcp** → `tcpwrapped` (SSH, ama banner gizli/filtreli)
-- **80/tcp** → `tcpwrapped`, ancak HTTP başlığında `Apache/2.4.68 (Debian)` görünüyor
-- **3000/tcp filtered** → dışarıdan erişime kapalı/filtrelenmiş olarak gözüküyor
+- **22/tcp** → `tcpwrapped` (SSH, ama banner gizli/filtreli).
+- **80/tcp** → `tcpwrapped`, ancak HTTP başlığında `Apache/2.4.68 (Debian)` görünüyor.
+- **3000/tcp filtered** → dışarıdan erişime kapalı/filtrelenmiş olarak gözüküyor.
 
 ### 3 — /etc/hosts Kaydı
 
@@ -57,6 +57,46 @@ echo "10.129.177.38 bedside.htb" | sudo tee -a /etc/hosts
 
 ![etc hosts](images/03.png)
 
+
+### 4 — Virtual Host Fuzzing (ffuf)
+
+```bash
+ffuf -u http://bedside.htb/ -H "Host: FUZZ.bedside.htb" -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -ac
+```
+
+![ffuf vhost](images/04.png)
+
+`Host:` header'ını fuzzlayarak sunucuda tanımlı olabilecek başka **virtual host'ları** (subdomain) arıyoruz.
+**Not:** -ac (auto-calibrate) ile yanlış pozitifler'i otomatik olarak eliyor.
+Sonuç: **`research`** subdomaini 200 OK dönüyor. 
+
+
+### 5 — /etc/hosts Kaydı (research.bedside.htb)
+
+```bash
+echo "10.129.177.38 research.bedside.htb" | sudo tee -a /etc/hosts
+```
+
+![etc hosts research](images/05.png)
+
+ffuf ile bulduğumuz `research.bedside.htb` vhost'una tarayıcıdan erişebilmek için bu kaydı da `/etc/hosts`'a ekliyoruz.
+
+
+### 6 — Gobuster Dizin Taraması
+
+```bash
+gobuster dir -u http://research.bedside.htb -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt
+```
+
+![gobuster](images/06.png)
+
+`research.bedside.htb` üzerinde gizli dizin/endpoint'leri aramak için gobuster çalıştırıyoruz. Sonuçlar:
+
+- `/uploads/` (301) — yüklenen dosyaların tutulduğu dizin
+- `/javascript/` (301)
+- `/server-status` (403) — erişim engellenmiş
+
+`/uploads/` bulgusu, sitede bir **dosya yükleme fonksiyonu** olduğuna işaret ediyor.
 
 
 
