@@ -99,17 +99,28 @@ gobuster dir -u http://research.bedside.htb -w /usr/share/seclists/Discovery/Web
 `/uploads/` bulgusu, sitede bir **dosya yükleme fonksiyonu** olduğuna işaret ediyor.
 
 
-### 7 — Research Portal'ı İnceleme
+### 7 — Ana Sayfayı (bedside.htb) İnceleme
 
-![research portal](images/07.png)
-
-
-
-### 8 — Ana Sayfayı (bedside.htb) İnceleme
-
-![bedside ana sayfa](images/08.png)
+![bedside ana sayfa](images/07.png)
 
 
+### 8 — Research Portal'ı İnceleme
+
+![research portal](images/08.png)
+
+Burası **"Bedside Research Portal"** adında bir dosya yükleme arayüzü.
+Kabul ettiği formatlar: `jpeg, jpg, png, bmp, tiff, dcm, pdf`.
+
+
+---
+
+## Foothold — Dosya Yükleme ve Reverse Shell
+
+### 9 — Dosya Yükleme ve Reverse Shell Alma
+
+![reverse shell](images/09.png)
+
+Research portalındaki dosya yükleme fonksiyonunu kullanarak bir reverse shell payload'ı yüklüyoruz (arka planda çalışan PDF/görüntü işleme pipeline'ını tetikleyerek). Bağlantı geldiğinde `nc -lvnp 9000` ile shell'i yakalıyoruz.
 
 
 
