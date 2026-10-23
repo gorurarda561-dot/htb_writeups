@@ -149,7 +149,7 @@ cat requirements.txt
 ```
 
 `pdfminer.six==20250506` paketi görülüyor — watcher, PDF dosyalarını `pdfminer` ile parse ediyor. Kök dizine çıkıp (`cd ..`, `ls -la`) genel yapıyı inceliyoruz.
-
+`sudo -l` denemesi bu noktada sonuç vermiyor.
 
 
 
