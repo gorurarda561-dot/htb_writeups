@@ -149,7 +149,8 @@ ardından `Ctrl+Z` ile arka plana alıp `stty raw -echo; fg` ile terminali tam e
 cat requirements.txt
 ```
 
-`pdfminer.six==20250506` paketi görülüyor — watcher, PDF dosyalarını `pdfminer` ile parse ediyor. Kök dizine çıkıp (`cd ..`, `ls -la`) genel yapıyı inceliyoruz.
+`pdfminer.six==20250506` paketi görülüyor — watcher, PDF dosyalarını `pdfminer` ile parse ediyor. Kök dizine çıkıp (`cd ..`, `ls -la`) genel yapıyı inceliyoruz: `.dockerenv` dosyası **container içinde** olduğumuzu doğruluyor, `/datastore` dizininin `dataops` grubuna yazma izni verdiğini görüyoruz (`drwxrwx--- dataops`).
+Container içinde olduğumuzu bildiğimize göre, Docker'ın varsayılan bridge network gateway'i olan **`172.17.0.1`**'i deneyip, nmap'te dışarıdan filtrelenmiş görünen **3000 portuna** container içinden erişilip erişilemediğine bakıyoruz.
 `sudo -l` denemesi bu noktada sonuç vermiyor.
 
 
