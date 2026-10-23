@@ -308,6 +308,54 @@ cat /root/root.txt
 Makine tamamlandı.
 
 
+## ---  ÖZET  ---
+
+Bu saldırı zincirinde, önce virtual host fuzzing ile `research.bedside.htb` subdomainini keşfettik. Buradaki dosya yükleme portalının arka planda bir PDF işleme pipeline'ı (`pdf_watcher.py`, `pdfminer.six` tabanlı) çalıştırdığını tespit edip, hazırladığımız kötücül bir pickle payload'ını PDF içine gömerek `datawrangler` kullanıcısı bağlamında bir reverse shell elde ettik.
+
+Container içinde olduğumuzu `.dockerenv` dosyasından doğruladıktan sonra, nmap'te dışarıdan filtrelenmiş görünen 3000 portuna Docker'ın varsayılan gateway IP'si (`172.17.0.1`) üzerinden container içinden erişebildiğimizi fark ettik. Bu iç servisteki bir path traversal zafiyetini (`--path-as-is` ile) kullanarak önce `/etc/passwd`'i, ardından `developer` kullanıcısının SSH private key'ini sızdırdık ve bu kimlik bilgisiyle ana host'a yatay hareket ederek user flag'ini aldık.
+
+`developer` kullanıcısının `sudo -l` çıktısında, `bedside_trainer.py` scriptini root olarak çalıştırabildiğini gördük. Bu script, MONAI/Ignite framework'ü üzerinden `/datastore/checkpoints` dizinindeki `.pt` checkpoint dosyalarını otomatik yüklüyordu — ve bu dizine `dataops` grup üyeliğimiz sayesinde yazabiliyorduk. İçine `os.system()` çağıran bir `__reduce__` nesnesi gömülü sahte bir PyTorch checkpoint dosyası hazırlayıp bu dizine bıraktık; script'i tetiklediğimizde `torch.load()` üzerinden pickle deserialize edildi ve komutumuz root bağlamında çalışarak `/bin/bash`'e SUID bit kazandırdı. Son olarak `/bin/bash -p` ile root shell alıp root flag'ini elde ettik.
+
+
+## ---  TERİMLER SÖZLÜĞÜ  ---
+
+**Pipeline:** Bir verinin (dosya/görüntü vb.) art arda birden fazla işleme adımından otomatik olarak geçirildiği süreç zinciri.
+
+**Watcher:** Belirli bir dizini/kaynağı sürekli izleyip, yeni bir dosya/olay geldiğinde otomatik olarak tetiklenen arka plan süreci.
+
+**Pickle Payload:** Python'ın `pickle` serileştirme formatıyla hazırlanmış, deserialize edildiğinde saldırganın istediği kodu çalıştıran kötücül veri.
+
+**Cron/Watcher:** Belirli aralıklarla (burada ~30 saniyede bir) otomatik tetiklenen, yeni dosyaları işleyen zamanlanmış arka plan süreci.
+
+**Parse:** Bir dosyanın/verinin/PDF'in içeriğinin program tarafından okunup yorumlanması, anlamlı parçalara ayrıştırılması.
+
+**ML Pipeline Abuse:** Bir makine öğrenmesi iş akışının (veri/model yükleme, eğitim, checkpoint işleme gibi) güvenlik açıklarının saldırı amacıyla kötüye kullanılması.
+
+**SSRF (Server-Side Request Forgery):** Bir sunucunun, saldırgan tarafından kontrol edilen bir isteği kendi adına (genelde iç ağa) göndermeye zorlanması.
+
+**Yatay Hareket (Lateral Movement):** Ele geçirilen bir kullanıcı/sistem üzerinden, aynı ağdaki başka bir kullanıcıya veya sisteme geçme tekniği.
+
+**Torch Deserialization:** PyTorch'un `.pt`/`.pth` checkpoint dosyalarını yüklerken, içindeki pickle verisini nesneye geri dönüştürme (deserialize etme) işlemi.
+
+**Path Traversal:** `../` gibi dizilerle, bir uygulamanın erişime kapatması gereken dosya sistemi konumlarına (örn. `/etc/passwd`) erişilmesini sağlayan zafiyet türü.
+
+**Credential:** Bir sisteme kimlik doğrulamak için kullanılan bilgi (parola, SSH private key, token vb.).
+
+**Deserialize:** Serileştirilmiş (diske/ağa yazılmış) verinin, programın kullanabileceği bir nesne haline geri dönüştürülmesi işlemi.
+
+**SUID Bit:** Bir çalıştırılabilir dosyaya atandığında, dosyanın sahibinin (örn. root) yetkisiyle çalışmasını sağlayan özel izin biti (`chmod +s`).
+
+**CMap (Character Map):** PDF'lerde font karakterlerinin kodlanma biçimini tanımlayan yapı; pdfminer bu yapıyı çözümlerken diskten pickle veri okuyabiliyor.
+
+**torch.load():** PyTorch'ta `.pt` dosyalarını yükleyen fonksiyon; varsayılan ayarlarında pickle deserialize eder.
+
+**MONAI:** Tıbbi görüntüleme verileri (X-ray, CT, MR vb.) üzerinde çalışmak için geliştirilmiş, PyTorch tabanlı açık kaynak derin öğrenme framework'ü.
+
+**NOPASSWD:** sudoers yapılandırmasında, belirtilen komutun şifre sorulmadan çalıştırılabileceğini belirten direktif.
+
+**Insecure Deserialization:** Güvenilmeyen, dışarıdan kontrol edilebilen verinin bir programlama dilinin nesne formatına (pickle, serialize, vb.) geri dönüştürülmesi sırasında keyfi kod çalıştırılabilmesine izin veren zafiyet sınıfı.
+
+**Docker Bridge Network:** Container'ların varsayılan olarak bağlandığı, host ile container'lar arasında izole bir sanal ağ. Genelde gateway IP'si `172.17.0.1` olur.
 
 
 
