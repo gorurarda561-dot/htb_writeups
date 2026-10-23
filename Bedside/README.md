@@ -103,6 +103,7 @@ gobuster dir -u http://research.bedside.htb -w /usr/share/seclists/Discovery/Web
 
 ![bedside ana sayfa](images/07.png)
 
+Ana sayfa klasik bir klinik tanıtım sitesi, doğrudan kullanılabilir bir fonksiyon barındırmıyor.
 
 ### 8 — Research Portal'ı İnceleme
 
@@ -233,7 +234,15 @@ cat user.txt
 
 ## Privilege Escalation — ML Checkpoint Deserialization
 
-### 18 — Kötücül Checkpoint Payload Hazırlama
+### 18 — Sudo -l Yetkisi ve Kötücül Checkpoint Payload Hazırlama
+
+```bash
+sudo -l
+```
+
+![sudo -l](images/18-1.png)
+
+`developer` kullanıcısının sudo yetkilerine bakıyoruz. Çıktı kritik: **`(ALL) NOPASSWD: /usr/bin/python3 /opt/trainer/bedside_trainer.py`** — yani `developer`, bu scripti şifresiz ve **root olarak** çalıştırabiliyor.
 
 ```bash
 nano bedside_evil.py
