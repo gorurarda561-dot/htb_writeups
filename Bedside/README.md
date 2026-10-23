@@ -258,6 +258,8 @@ python3 -m http.server 8080
 
 PyTorch'un `.pt` formatı, pickle edilmiş veri içeren bir zip arşivi. `bedside_evil.py`, içine `os.system()` çağıran bir `__reduce__` nesnesi gömülü sahte bir checkpoint üretiyor — `torch.load()` ile açıldığında `chmod +s /bin/bash` komutu çalışacak. Gözden kaçırmak için masum bir `dummy.png` de hazırlanıp, ikisi `http.server` ile servis ediliyor.
 
+Script: [`bedside_evil.py`](scripts/bedside_evil.py)
+
 
 ### 19 — Payload'ı datastore Dizinine İndirme
 
