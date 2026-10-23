@@ -99,6 +99,17 @@ gobuster dir -u http://research.bedside.htb -w /usr/share/seclists/Discovery/Web
 `/uploads/` bulgusu, sitede bir **dosya yükleme fonksiyonu** olduğuna işaret ediyor.
 
 
+### 7 — Research Portal'ı İnceleme
+
+![research portal](images/07.png)
+
+
+
+### 8 — Ana Sayfayı (bedside.htb) İnceleme
+
+![bedside ana sayfa](images/08.png)
+
+
 
 
 
