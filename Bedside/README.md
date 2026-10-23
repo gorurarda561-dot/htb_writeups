@@ -115,7 +115,7 @@ Kabul ettiği formatlar: `jpeg, jpg, png, bmp, tiff, dcm, pdf`.
 
 ---
 
-## Foothold — Dosya Yükleme ve Reverse Shell
+## Foothold — PDF Pipeline Üzerinden Pickle Deserialization
 
 ### 9 — Payload Hazırlama ve Yükleme
 
@@ -123,6 +123,7 @@ Kabul ettiği formatlar: `jpeg, jpg, png, bmp, tiff, dcm, pdf`.
 
 `bedsidee.py` scriptiyle bir reverse shell komutu barındıran kötücül bir pickle payload'ı oluşturuyoruz (`shell.pickle.gz`). Ardından `trigger.py` scriptiyle bu payload'ı araştırma portalına yüklüyoruz — `sh.pickle.gz` ve `trigger.pdf` olarak yükleniyor ve arka planda çalışan **cron/watcher** sürecinin bunu işlemesini (`~30s` içinde) bekliyoruz.
 
+Script'ler: [`bedsidee.py`](scripts/bedsidee.py) · [`trigger.py`](scripts/trigger.py)
 
 ### 10 — Reverse Shell 
 
