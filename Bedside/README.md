@@ -25,21 +25,37 @@ ML checkpoint yükleme akışında güvensiz pickle/torch deserialization → Ro
 
 ## Recon (Keşif)
 
-### 1 - Host ayakta mı ?
+### 1 — Host ayakta mı?
 
-ping komutu ile hedefin ağ üzerinden erişilebilir durumda olup olmadığına bakıyoruz 
-not: TTL değeri 63 olarak görüldü bu hedefin bir linux sistemi olduğuna dair ilk ipucu 
+\`\`\`bash
+ping -c 4 10.129.177.38
+\`\`\`
 
-2 - nmap port/service/os taraması 
+![ping](images/01.png)
 
-**22/tcp** → `tcpwrapped` (SSH, ama banner gizli/filtreli
-**80/tcp** → `tcpwrapped`, ancak HTTP başlığında `Apache/2.4.68 (Debian)` görünüyor
-**3000/tcp filtered** → dışarıdan erişime kapalı/filtrelenmiş olarak gözüküyor 
+Ping komutu ile hedefin ağ üzerinden erişilebilir durumda olup olmadığına bakıyoruz.
 
+**Not:** TTL değeri 63 olarak görüldü — bu, hedefin bir Linux sistemi olduğuna dair ilk ipucu.
 
+### 2 — Nmap Port/Service/OS Taraması
 
-3 - /etc/hosts kaydı 
+\`\`\`bash
+nmap -A -Pn 10.129.177.38
+\`\`\`
 
+![nmap taraması](images/02.png)
+
+- **22/tcp** → `tcpwrapped` (SSH, ama banner gizli/filtreli)
+- **80/tcp** → `tcpwrapped`, ancak HTTP başlığında `Apache/2.4.68 (Debian)` görünüyor
+- **3000/tcp filtered** → dışarıdan erişime kapalı/filtrelenmiş olarak gözüküyor
+
+### 3 — /etc/hosts Kaydı
+
+\`\`\`bash
+echo "10.129.177.38 bedside.htb" | sudo tee -a /etc/hosts
+\`\`\`
+
+![etc hosts](images/03.png)
 
 
 
