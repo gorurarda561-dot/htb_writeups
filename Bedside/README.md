@@ -23,3 +23,47 @@ ML checkpoint yükleme akışında güvensiz pickle/torch deserialization → Ro
 
 ---
 
+## Recon (Keşif)
+
+### 1 - Host ayakta mı ?
+
+ping komutu ile hedefin ağ üzerinden erişilebilir durumda olup olmadığına bakıyoruz 
+not: TTL değeri 63 olarak görüldü bu hedefin bir linux sistemi olduğuna dair ilk ipucu 
+
+2 - nmap port/service/os taraması 
+
+**22/tcp** → `tcpwrapped` (SSH, ama banner gizli/filtreli
+**80/tcp** → `tcpwrapped`, ancak HTTP başlığında `Apache/2.4.68 (Debian)` görünüyor
+**3000/tcp filtered** → dışarıdan erişime kapalı/filtrelenmiş olarak gözüküyor 
+
+
+
+3 - /etc/hosts kaydı 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
