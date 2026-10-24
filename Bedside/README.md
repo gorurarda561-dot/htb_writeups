@@ -253,7 +253,7 @@ python3 -c "from PIL import Image; Image.new('RGB',(10,10),color='red').save('du
 python3 -m http.server 8080
 ```
 
-![evil checkpoint write](images/18.png)
+![evil checkpoint write](images/18-2.png)
 
 
 PyTorch'un `.pt` formatı, pickle edilmiş veri içeren bir zip arşivi. `bedside_evil.py`, içine `os.system()` çağıran bir `__reduce__` nesnesi gömülü sahte bir checkpoint üretiyor — `torch.load()` ile açıldığında `chmod +s /bin/bash` komutu çalışacak. Gözden kaçırmak için masum bir `dummy.png` de hazırlanıp, ikisi `http.server` ile servis ediliyor.
